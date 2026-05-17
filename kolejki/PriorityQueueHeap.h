@@ -1,11 +1,7 @@
 #pragma once
 #include <vector>
 #include <stdexcept>
-
-struct Element {
-    int value;
-    int priority;
-};
+#include "Element.h"
 
 class BinaryHeapPQ {
 private:
