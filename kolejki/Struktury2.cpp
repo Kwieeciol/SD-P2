@@ -157,9 +157,9 @@ void pqMenu(std::string name) {
 
     while (choice != 0) {
         std::cout << "\n--- " << name << " ---" << std::endl;
-        std::cout << "1. Zbuduj z pliku\n2. Losowe wypelnienie\n3. Insert\n4. Extract-Max\n5. Modify-Key\n0. Powrot\nWybor: ";
+        std::cout << "1. Zbuduj z pliku\n2. Losowe wypelnienie\n3. Insert\n4. Find-Max\n5. Extract-Max\n6. Modify-Key\n7. Return-Size\n0. Powrot\nWybor: ";
         if (!(std::cin >> choice)) { std::cin.clear(); while (std::cin.get() != '\n'); continue; }
-
+        std::system("cls");
         switch (choice) {
         case 1: {
             std::string path; std::cout << "Sciezka: "; std::cin >> path;
@@ -172,27 +172,46 @@ void pqMenu(std::string name) {
             break;
         }
         case 2: {
-            int n; std::cout << "Ile elementów: "; std::cin >> n;
+            int n; std::cout << "Ile elementow: "; std::cin >> n;
             std::uniform_int_distribution<int> d(0, n * 10);
             for (int i = 0; i < n; i++) pq.insert(i, d(gen));
             break;
         }
         case 3: {
-            int v, p; std::cout << "Wartosc i priorytet: "; std::cin >> v >> p;
+            int v, p; 
+            std::cout << "Wartosc: "; std::cin >> v ;
+            std::cout << "\nPriorytet: "; std::cin >> p;
             pq.insert(v, p);
             break;
         }
         case 4: {
             try {
-                Element e = pq.extractMax();
+                Element e = pq.findMax();
                 std::cout << "Max: " << e.value << " Prio: " << e.priority << "\n";
             }
             catch (...) { std::cout << "Blad!\n"; }
             break;
         }
         case 5: {
-            int v, p; std::cout << "Wartosc i nowy prio: "; std::cin >> v >> p;
+            try {
+                Element e = pq.extractMax();
+                std::cout << "Usunieto:\n";
+                std::cout << "Max: " << e.value << " Prio: " << e.priority << "\n";
+            }
+            catch (...) { std::cout << "Blad!\n"; }
+            break;
+        }
+        case 6: {
+            int v, p; 
+            std::cout << "Wartosc: "; std::cin >> v;
+            std::cout << "\nNowy priorytet: "; std::cin >> p;
+            pq.insert(v, p);
             pq.modifyKey(v, p);
+            break;
+        }
+        case 7: {
+            int s = pq.returnSize();
+            std::cout << "Rozmiar: " << s << std::endl;
             break;
         }
         }
@@ -207,7 +226,7 @@ int main() {
         std::cout << "\n=== BADANIE KOLEJEK PRIORYTETOWYCH ===\n";
         std::cout << "1. Binary Heap\n2. Pairing Heap\n3. Wygeneruj plik testowy\n4. Badania porownawcze\n0. Wyjscie\nWybor: ";
         if (!(std::cin >> choice)) { std::cin.clear(); while (std::cin.get() != '\n'); continue; }
-
+        std::system("cls");
         switch (choice) {
         case 1: pqMenu<BinaryHeapPQ>("Binary Heap"); break;
         case 2: pqMenu<PairingHeapPQ>("Pairing Heap"); break;
