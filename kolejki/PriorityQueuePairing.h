@@ -8,7 +8,7 @@ struct PairingNode {
     int priority;
     PairingNode* child;
     PairingNode* sibling;
-    PairingNode* prev; // WskaŸnik na rodzica LUB lewe rodzeñstwo
+    PairingNode* prev;
 
     PairingNode(int v, int p)
         : value(v), priority(p), child(nullptr), sibling(nullptr), prev(nullptr) {
@@ -25,6 +25,7 @@ private:
     PairingNode* merge(PairingNode* h1, PairingNode* h2);
     PairingNode* combineSiblings(PairingNode* firstSibling);
     void clear(PairingNode* node);
+    void detachNode(PairingNode* node);
     PairingNode* findNode(PairingNode* startNode, int value) const;
 
 public:
@@ -32,8 +33,7 @@ public:
     PairingHeapPQ();
     ~PairingHeapPQ();
 
-    // Dodanie elementu - O(1)
-    void insert(int value, int priority);
+    PairingNode* insert(int value, int priority);
     Element extractMax();
     Element findMax() const;
     void modifyKey(int value, int newPriority);
