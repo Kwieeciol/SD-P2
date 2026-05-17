@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <chrono>
 #include <random>
 #include <iomanip>
@@ -24,7 +24,6 @@ std::string getOpName(Operation op) {
     }
 }
 
-// Globalny generator, aby nie inicjalizować go co chwilę (co psuje losowość)
 std::mt19937& getGenerator(unsigned int seed) {
     static std::mt19937 gen(seed);
     static unsigned int currentSeed = seed;
@@ -35,7 +34,6 @@ std::mt19937& getGenerator(unsigned int seed) {
     return gen;
 }
 
-// Generowanie pliku z priorytetami (zakres > rozmiar)
 void generatePriorityFile(unsigned int seed, int size, std::string fileName) {
     std::ofstream file(fileName);
     if (!file.is_open()) return;
@@ -52,22 +50,19 @@ void generatePriorityFile(unsigned int seed, int size, std::string fileName) {
     std::cout << "Wygenerowano plik '" << fileName << "' przy uzyciu mt19937." << std::endl;
 }
 
-// Pomiar wydajności
 template <typename T>
-long long measurePQ(int size, Operation op, unsigned int seed, int repetitions) {
+long long measurePQ(int size, Operation op, unsigned int seed, int repetitions, bool typ) {
     long long totalDuration = 0;
     auto& gen = getGenerator(seed);
 
-    // Zakresy zgodne z Twoimi wytycznymi
     std::uniform_int_distribution<int> valDist(0, 1000000);
     std::uniform_int_distribution<int> prioDist(0, size * 10);
 
     for (int r = 0; r < repetitions; r++) {
         T* pq = new T();
         std::vector<int> insertedValues;
-        insertedValues.reserve(size); // Optymalizacja pamięci dla wektora
+        insertedValues.reserve(size); 
 
-        // 1. Wypełnianie struktury i zapisywanie wartości do tablicy
         for (int j = 0; j < size; j++) {
             int v = valDist(gen);
             int p = prioDist(gen);
@@ -75,18 +70,20 @@ long long measurePQ(int size, Operation op, unsigned int seed, int repetitions) 
             insertedValues.push_back(v);
         }
 
-        // Przygotowanie danych do testu
         int v = valDist(gen);
         int p = prioDist(gen);
         int existingValue = 0;
 
-        // Jeśli testujemy modifyKey, losujemy wartość z tych, które już są w środku
         if (op == MODIFY_KEY && !insertedValues.empty()) {
             std::uniform_int_distribution<int> indexDist(0, size - 1);
             existingValue = insertedValues[indexDist(gen)];
         }
-
-        // 2. Pomiar czasu konkretnej operacji
+        if (op == EXTRACT_MAX) {
+            int warmup = (int)std::sqrt(size);
+            for (int i = 0; i < warmup && !pq->isEmpty(); i++) {
+                pq->extractMax();
+            }
+        }
         auto start = std::chrono::high_resolution_clock::now();
 
         if (op == INSERT) {
@@ -100,11 +97,9 @@ long long measurePQ(int size, Operation op, unsigned int seed, int repetitions) 
         }
         else if (op == MODIFY_KEY) {
             try {
-                // Teraz na pewno modyfikujemy istniejący klucz
                 pq->modifyKey(existingValue, p);
             }
             catch (...) {
-                // Zabezpieczenie, gdyby modifyKey rzuciło błąd mimo istnienia wartości
             }
         }
         else if (op == RETURN_SIZE) {
@@ -114,8 +109,6 @@ long long measurePQ(int size, Operation op, unsigned int seed, int repetitions) 
         auto end = std::chrono::high_resolution_clock::now();
 
         totalDuration += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-
-        // 3. Sprzątanie
         delete pq;
     }
     return totalDuration / repetitions;
@@ -123,7 +116,6 @@ long long measurePQ(int size, Operation op, unsigned int seed, int repetitions) 
 
 void runPQTests(const unsigned int seeds[10]) {
     std::vector<Operation> ops = { INSERT, EXTRACT_MAX, FIND_MAX, MODIFY_KEY, RETURN_SIZE };
-
     for (auto op : ops) {
         std::string fileName = "test_" + getOpName(op) + ".csv";
         std::ofstream file(fileName);
@@ -144,9 +136,9 @@ void runPQTests(const unsigned int seeds[10]) {
                     std::cout << "\rRozmiar: " << std::setw(6) << N
                         << " | Postep: [0" << s + 1 << "/10] | Binary... " << std::flush;
                 }
-                avgBinary += measurePQ<BinaryHeapPQ>(N, op, seeds[s], 10);
+                avgBinary += measurePQ<BinaryHeapPQ>(N, op, seeds[s], 10, 0);
                 std::cout << "OK | Pairing... " << std::flush;
-                avgPairing += measurePQ<PairingHeapPQ>(N, op, seeds[s], 10);
+                avgPairing += measurePQ<PairingHeapPQ>(N, op, seeds[s], 10, 1);
                 std::cout << "OK" << std::flush;
             }
             file << N << ";" << avgBinary / 10 << ";" << avgPairing / 10 << "\n";
@@ -160,7 +152,6 @@ template <typename T>
 void pqMenu(std::string name) {
     T pq;
     int choice = -1;
-    // Do losowania w menu
     std::random_device rd;
     std::mt19937 gen(rd());
 
