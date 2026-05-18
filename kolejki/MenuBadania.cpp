@@ -40,7 +40,7 @@ void generatePriorityFile(unsigned int seed, int size, std::string fileName) {
 
     auto& gen = getGenerator(seed);
     std::uniform_int_distribution<int> valDist(0, 1000000);
-    std::uniform_int_distribution<int> prioDist(0, size * 10);
+    std::uniform_int_distribution<int> prioDist(0, size * 10); // Zakres priorytetów 10 razy wiekszy od rozmiaru
 
     file << size << "\n";
     for (int i = 0; i < size; i++) {
@@ -53,16 +53,16 @@ void generatePriorityFile(unsigned int seed, int size, std::string fileName) {
 template <typename T>
 long long measurePQ(int size, Operation op, unsigned int seed, int repetitions, bool typ) {
     long long totalDuration = 0;
-    auto& gen = getGenerator(seed);
+    auto& gen = getGenerator(seed); // Inicjalizacja generatora z danym seedem
 
     std::uniform_int_distribution<int> valDist(0, 1000000);
-    std::uniform_int_distribution<int> prioDist(0, size * 10);
+    std::uniform_int_distribution<int> prioDist(0, size * 10); // Zakres priorytetów 10 razy wiekszy od rozmiaru
 
     for (int r = 0; r < repetitions; r++) {
         T* pq = new T();
         std::vector<int> insertedValues;
         insertedValues.reserve(size); 
-
+        // Wypełnienie struktury
         for (int j = 0; j < size; j++) {
             int v = valDist(gen);
             int p = prioDist(gen);
@@ -73,11 +73,13 @@ long long measurePQ(int size, Operation op, unsigned int seed, int repetitions, 
         int v = valDist(gen);
         int p = prioDist(gen);
         int existingValue = 0;
-
+        // Upewnienie się, ze przy modify key uzyjemy istniejacej wartosci
         if (op == MODIFY_KEY && !insertedValues.empty()) {
             std::uniform_int_distribution<int> indexDist(0, size - 1);
             existingValue = insertedValues[indexDist(gen)];
         }
+        // Rozgerzanie struktury przed wlaściwym badaniem, dla pairing heapa po wstepnym wypełnieniu struktury
+        // bez rozgrzewki wyniki są sztucznie zwiekszone, ponieważ jest bardzo słabo zorganizowana
         if (op == EXTRACT_MAX) {
             int warmup = (int)std::sqrt(size);
             for (int i = 0; i < warmup && !pq->isEmpty(); i++) {
@@ -85,7 +87,7 @@ long long measurePQ(int size, Operation op, unsigned int seed, int repetitions, 
             }
         }
         auto start = std::chrono::high_resolution_clock::now();
-
+        // Wykonanie odpowiednich operacji
         if (op == INSERT) {
             pq->insert(v, p);
         }
@@ -123,11 +125,11 @@ void runPQTests(const unsigned int seeds[10]) {
 
         std::cout << "\nBadanie: " << getOpName(op) << "..." << std::endl;
 
-        for (int i = 1; i <= 8; i++) {
+        for (int i = 1; i <= 8; i++) { // Wykonanie badań dla 8 rozmiarów co 5k elementów od 5k do 40k
             int N = i * 5000;
             long long avgBinary = 0, avgPairing = 0;
 
-            for (int s = 0; s < 10; s++) {
+            for (int s = 0; s < 10; s++) { // Wykonanie badan dla 10 roznych seedow dla kazdego rozmiaru
                 if (s == 9) {
                     std::cout << "\rRozmiar: " << std::setw(6) << N
                         << " | Postep: [" << s + 1 << "/10] | Binary... " << std::flush;
@@ -136,11 +138,13 @@ void runPQTests(const unsigned int seeds[10]) {
                     std::cout << "\rRozmiar: " << std::setw(6) << N
                         << " | Postep: [0" << s + 1 << "/10] | Binary... " << std::flush;
                 }
+                // Wykonywanie kazdego seeda 10 razy
                 avgBinary += measurePQ<BinaryHeapPQ>(N, op, seeds[s], 10, 0);
                 std::cout << "OK | Pairing... " << std::flush;
                 avgPairing += measurePQ<PairingHeapPQ>(N, op, seeds[s], 10, 1);
                 std::cout << "OK" << std::flush;
             }
+            // Zapisanie czasu w pliku
             file << N << ";" << avgBinary / 10 << ";" << avgPairing / 10 << "\n";
         }
         file.close();
